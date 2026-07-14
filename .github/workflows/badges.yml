@@ -24,6 +24,7 @@ jobs:
       - name: Update badge block in README
         env:
           OWNER_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: python3 .badge-tools/scripts/update_badges.py README.md
 
       - name: Commit changes
