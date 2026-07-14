@@ -17,18 +17,41 @@ import sys
 from pathlib import Path
 
 README_PATH = Path(sys.argv[1] if len(sys.argv) > 1 else "README.md")
+REPO_ROOT = README_PATH.parent
 START = "<!-- BADGES:START -->"
 END = "<!-- BADGES:END -->"
+
+LICENSE_NAMES = ("LICENSE", "LICENSE.md", "LICENSE.txt")
+
+
+def license_badge(owner_repo: str) -> str:
+    """Proprietary "All rights reserved" content has no SPDX id, so GitHub's
+    dynamic license badge would just render blank — use a static badge for it
+    instead. Anything else (MIT, GPL, CC, ...) uses the normal dynamic badge.
+    """
+    for name in LICENSE_NAMES:
+        path = REPO_ROOT / name
+        if path.exists() and "all rights reserved" in path.read_text().lower():
+            return "![License](https://img.shields.io/badge/license-All%20rights%20reserved-blue)"
+    return f"![License](https://img.shields.io/github/license/{owner_repo})"
+
+
+def uses_python() -> bool:
+    if any(REPO_ROOT.rglob("*.py")):
+        return True
+    return any((REPO_ROOT / name).exists() for name in ("requirements.txt", "pyproject.toml"))
 
 
 def build_block(owner_repo: str) -> str:
     badges = [
-        f"![License](https://img.shields.io/github/license/{owner_repo})",
+        license_badge(owner_repo),
         f"![Last commit](https://img.shields.io/github/last-commit/{owner_repo})",
         f"![Repo size](https://img.shields.io/github/repo-size/{owner_repo})",
         f"![Top language](https://img.shields.io/github/languages/top/{owner_repo})",
         f"![Open issues](https://img.shields.io/github/issues/{owner_repo})",
     ]
+    if uses_python():
+        badges.append("![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)")
     return "\n".join(badges)
 
 
