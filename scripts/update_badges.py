@@ -74,38 +74,35 @@ def license_badge(owner_repo: str, private: bool, repo_info: dict) -> str:
     return f"![License](https://img.shields.io/github/license/{owner_repo})"
 
 
-def uses_python() -> bool:
-    if any(REPO_ROOT.rglob("*.py")):
-        return True
-    return any((REPO_ROOT / name).exists() for name in ("requirements.txt", "pyproject.toml"))
+def language_badges(languages: dict) -> list:
+    total = sum(languages.values())
+    if not total:
+        return []
+    by_share = sorted(languages.items(), key=lambda kv: kv[1], reverse=True)
+    return [static_badge(name, f"{bytes_ / total * 100:.1f}%", "blue") for name, bytes_ in by_share]
 
 
 def build_block(owner_repo: str) -> str:
     repo_info = gh_api(f"repos/{owner_repo}")
     private = bool(repo_info.get("private"))
+    languages = gh_api(f"repos/{owner_repo}/languages")
 
     badges = [license_badge(owner_repo, private, repo_info)]
 
     if private:
-        languages = gh_api(f"repos/{owner_repo}/languages")
-        top_language = max(languages, key=languages.get) if languages else None
         badges += [
             static_badge("last commit", local_last_commit_date(), "blue"),
             static_badge("repo size", format_size(repo_info.get("size", 0)), "blue"),
+            static_badge("issues", str(repo_info.get("open_issues_count", 0)), "blue"),
         ]
-        if top_language:
-            badges.append(static_badge("language", top_language, "blue"))
-        badges.append(static_badge("issues", str(repo_info.get("open_issues_count", 0)), "blue"))
     else:
         badges += [
             f"![Last commit](https://img.shields.io/github/last-commit/{owner_repo})",
             f"![Repo size](https://img.shields.io/github/repo-size/{owner_repo})",
-            f"![Top language](https://img.shields.io/github/languages/top/{owner_repo})",
             f"![Open issues](https://img.shields.io/github/issues/{owner_repo})",
         ]
 
-    if uses_python():
-        badges.append("![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)")
+    badges += language_badges(languages)
 
     return "\n".join(badges)
 
