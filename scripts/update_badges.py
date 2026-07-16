@@ -33,9 +33,17 @@ END = "<!-- BADGES:END -->"
 LICENSE_NAMES = ("LICENSE", "LICENSE.md", "LICENSE.txt")
 
 
+def _shields_escape(text: str) -> str:
+    """shields.io's static-badge endpoint splits the URL path on '-', so a
+    literal dash (e.g. in a date like 2026-07-16) must be doubled to '--' to
+    survive the parse; likewise '_' must become '__'.
+    """
+    return text.replace("-", "--").replace("_", "__")
+
+
 def static_badge(label: str, message: str, color: str) -> str:
-    l = urllib.parse.quote(label, safe="")
-    m = urllib.parse.quote(message, safe="")
+    l = urllib.parse.quote(_shields_escape(label), safe="")
+    m = urllib.parse.quote(_shields_escape(message), safe="")
     return f"![{label}](https://img.shields.io/badge/{l}-{m}-{color})"
 
 
